@@ -27,3 +27,6 @@ web/node_modules/
 web/.next/
 web/tsconfig.tsbuildinfo
 web/.env*.local
+
+# 本機執行產物（每日訊號、模擬帳戶、log）
+data/
