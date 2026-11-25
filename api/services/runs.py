@@ -7,9 +7,33 @@ import threading
 import time
 import uuid
 
+import numpy as np
+
 from stock_strategies.evaluate import evaluate
 from stock_strategies.market import apply_market_filter, get_market_state
 from stock_strategies.sheet import read_watchlist
+
+
+def _to_builtin(value):
+    """把 numpy / pandas 型別轉成 JSON 可輸出的 Python 原生型別。"""
+    if isinstance(value, dict):
+        return {str(k): _to_builtin(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_to_builtin(v) for v in value]
+    if isinstance(value, np.bool_):
+        return bool(value)
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        f = float(value)
+        return None if f != f or f in (float("inf"), float("-inf")) else f
+    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+        return None
+    if isinstance(value, np.ndarray):
+        return [_to_builtin(v) for v in value.tolist()]
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return value
 
 
 def screen(strategy, limit=None, *, progress=None, cancel=None, delay=0.4):
@@ -49,7 +73,7 @@ def screen(strategy, limit=None, *, progress=None, cancel=None, delay=0.4):
     downgraded = apply_market_filter(results, market) if market_enabled else 0
     order = {"BUY": 0, "WATCH": 1, "SKIP": 2, "ERROR": 3}
     results.sort(key=lambda row: (order.get(row.get("action"), 4), -(row.get("signal_score") or 0)))
-    return {
+    return _to_builtin({
         "strategy": {"id": strategy["id"], "name": strategy["name"]},
         "market": market,
         "downgraded": downgraded,
@@ -58,7 +82,7 @@ def screen(strategy, limit=None, *, progress=None, cancel=None, delay=0.4):
             for action in order
         }},
         "results": results,
-    }
+    })
 
 
 class RunBusy(RuntimeError):

@@ -107,7 +107,14 @@ def _rate_limited_get(params: dict, timeout: int, max_retries: int) -> dict:
             time.sleep(backoff)
             attempt += 1
             continue
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            try:
+                msg = resp.json().get("msg", "")
+            except Exception:
+                msg = resp.text[:200]
+            raise RuntimeError(
+                f"FinMind {resp.status_code}：{msg}（dataset={params.get('dataset')}）"
+            )
         return resp.json()
 
 
