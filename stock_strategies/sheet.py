@@ -17,8 +17,34 @@ def get_gsheet():
     return gc.open_by_key(os.environ["GOOGLE_SHEET_ID"])
 
 
+LOCAL_WATCHLIST = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "watchlist.csv"
+)
+
+
+def _google_configured() -> bool:
+    creds = os.environ.get("GOOGLE_CREDS_JSON", "")
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID", "")
+    return bool(creds and sheet_id) and "your_" not in sheet_id and '"..."' not in creds
+
+
+def _read_local_watchlist() -> list[dict]:
+    """沒設定 Google Sheet 時，改讀專案根目錄的 watchlist.csv"""
+    import csv
+    if not os.path.exists(LOCAL_WATCHLIST):
+        return []
+    with open(LOCAL_WATCHLIST, encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    return [
+        r for r in rows
+        if str(r.get("enabled", "")).strip().upper() in ("TRUE", "1", "YES")
+    ]
+
+
 def read_watchlist() -> list[dict]:
-    """從 Google Sheet Watchlist 分頁讀股票清單"""
+    """從 Google Sheet Watchlist 分頁讀股票清單；未設定 Google 時改讀 watchlist.csv"""
+    if not _google_configured():
+        return _read_local_watchlist()
     sh = get_gsheet()
     ws = sh.worksheet("Watchlist")
     rows = ws.get_all_records()
