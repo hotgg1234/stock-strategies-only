@@ -57,6 +57,18 @@ export type RunJob = {
   result: RunResult | null;
   error: string | null;
 };
+export type DailyLatest = ({ available: false }) | ({ available: true; trade_date: string; run_at: string; history: string[] } & RunResult);
+export type PaperPosition = { stock_id: string; name?: string; shares: number; entry_date: string; entry_price: number; cost_basis: number; stop_price: number; target_price: number; hold_days: number; days_held: number; last_close: number; signal_score?: number | null };
+export type PaperPending = { stock_id: string; name?: string; signal_date: string; budget: number; signal_score?: number | null };
+export type PaperTrade = { stock_id: string; name?: string; shares: number; entry_date: string; entry_price: number; exit_date: string; exit_price: number; reason: string; days_held: number; pnl: number; return_pct: number };
+export type PaperAccount = { available: false } | {
+  available: true;
+  summary: { initial_cash: number; cash: number; market_value: number; equity: number; return_pct: number; realized_pnl: number; trade_count: number; winrate: number | null };
+  positions: PaperPosition[];
+  pending: PaperPending[];
+  trades: PaperTrade[];
+  equity_history: { date: string; equity: number; cash: number; positions: number }[];
+};
 export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
@@ -105,5 +117,7 @@ export const api = {
   getWatchlist: (signal?: AbortSignal) => jfetch<{ items: { stock_id: string; name?: string }[]; error?: string }>("/api/watchlist", { signal }),
   startRun: (strategy_id: string) => jfetch<RunJob>("/api/runs", { method: "POST", body: JSON.stringify({ strategy_id }) }),
   getRun: (id: string, signal?: AbortSignal) => jfetch<RunJob>(`/api/runs/${encodeURIComponent(id)}`, { signal }),
+  getDailyLatest: (signal?: AbortSignal) => jfetch<DailyLatest>("/api/daily/latest", { signal }),
+  getPaper: (signal?: AbortSignal) => jfetch<PaperAccount>("/api/paper", { signal }),
   cancelRun: (id: string) => jfetch<RunJob>(`/api/runs/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

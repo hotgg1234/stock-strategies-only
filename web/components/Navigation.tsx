@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-const items = [{ href: "/", label: "今日訊號" }, { href: "/strategies", label: "策略庫" }, { href: "/strategies/new", label: "建立策略" }, { href: "/strategies/ai", label: "AI 策略助手" }];
+const items = [{ href: "/", label: "今日訊號" }, { href: "/auto", label: "自動交易" }, { href: "/strategies", label: "策略庫" }, { href: "/strategies/new", label: "建立策略" }, { href: "/strategies/ai", label: "AI 策略助手" }];
 export default function Navigation() {
   const pathname = usePathname();
   return <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur-xl">

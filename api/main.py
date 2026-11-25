@@ -18,9 +18,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import traceback
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Request
@@ -147,6 +149,39 @@ def generate_strategy(payload: AIGenerateIn):
 @app.get("/api/market")
 def market():
     return get_market_state()
+
+
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+
+@app.get("/api/daily/latest")
+def daily_latest():
+    """每日自動選股的最新結果（daily_run.py 產生）"""
+    path = _DATA_DIR / "signals" / "latest.json"
+    if not path.exists():
+        return {"available": False}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    history = sorted(p.stem for p in (_DATA_DIR / "signals").glob("20*.json"))
+    return {"available": True, "history": history[-30:], **data}
+
+
+@app.get("/api/paper")
+def paper_account():
+    """模擬交易帳戶"""
+    from stock_strategies import paper
+    path = _DATA_DIR / "paper" / "account.json"
+    if not path.exists():
+        return {"available": False}
+    account = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "available": True,
+        "summary": paper.summary(account),
+        "positions": account["positions"],
+        "pending": account["pending"],
+        "trades": list(reversed(account["trades"]))[:100],
+        "equity_history": account["equity_history"][-250:],
+        "events": list(reversed(account.get("events", [])))[:50],
+    }
 
 
 @app.get("/api/watchlist")
